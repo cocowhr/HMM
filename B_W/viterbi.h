@@ -8,4 +8,4 @@ using namespace std;
 #define ITEMLEN 4
 #define SEQUENCELEN 4
 #define TV 0.5	//∂Ã–Ú¡–∆•≈‰„–÷µ
-typedef pair<char,double> seq;
+typedef pair<int,double> seq;

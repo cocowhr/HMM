@@ -10,13 +10,13 @@ bool compnum(const seq a, const seq b) {
 class Seq_eq
 {
 public:
-	Seq_eq(const char& ss):s(ss){}
+	Seq_eq(const int& ss):s(ss){}
 	bool operator() (const seq& c) const
 	{
 		return c.first == s;
 	}
 private:
-	char s;
+	int s;
 };
 ///*注意：当训练序列为ABCD时
 //探查以B开始长度为4的序列会出现错误的后果
@@ -82,7 +82,11 @@ int* Viterbi(double **A,int N, int s,double* pi)
 	/* 4. Path (state sequence) backtracking */
 	for (t = T - 2; t >= 1; t--)
 		str[t] = psi[t+1][str[t+1]];
-
+	for(int i=0;i<T;i++)
+	{
+		cout<<str[i];
+	}
+	cout<<endl;
 	return str;
 }
 string int2str(int n) {
@@ -102,24 +106,15 @@ string int2str(int n) {
 	}
 	return ret;
 }
-string&   replace_all_distinct(string& str,const   string&   old_value,const   string&   new_value)     
-{     
-	for(string::size_type   pos(0);   pos!=string::npos;   pos+=new_value.length())   {     
-		if(   (pos=str.find(old_value,pos))!=string::npos   )     
-			str.replace(pos,old_value.length(),new_value);     
-		else   break;     
-	}     
-	return   str;     
-}  
 double Mtest(string s,vector<seq>*sequences,double** A,int N,double* pi)
 {
 	int slen=s.length();
 	for(int i=0;i<slen;i++)
 	{
-		if(s[i]>='A'&&s[i]<='Z')
+		if(s[i]>='0'&&s[i]<='9')
 		{
 			int sid=0;
-			vector<seq>::iterator result = find_if( sequences->begin( ), sequences->end( ),Seq_eq(s[i])); 
+			vector<seq>::iterator result = find_if( sequences->begin( ), sequences->end( ),Seq_eq(s[i]-'0')); 
 			if(result != sequences->end())
 			{
 				sid=result-sequences->begin();
@@ -128,10 +123,8 @@ double Mtest(string s,vector<seq>*sequences,double** A,int N,double* pi)
 			{
 				sid=sequences->end()-sequences->begin()-1;
 			}
-			string temp1="";
-			temp1+=s[i];
-			string temp2=int2str(sid); 
-			replace_all_distinct(s,temp1,temp2);
+			string temp2=int2str(sid);
+			s[i]=temp2[0];
 		}
 	}
 	int sup=0;
@@ -157,8 +150,48 @@ double Mtest(string s,vector<seq>*sequences,double** A,int N,double* pi)
 
 int main()
 {
-	string items[ITEMNUM];
-	items[0]="ABCD";
+	int items[ITEMNUM][ITEMLEN];
+	items[0][0]=1;
+	items[0][1]=2;
+	items[0][2]=3;
+	items[0][3]=4;//abcd
+	items[1][0]=2;
+	items[1][1]=3;
+	items[1][2]=4;
+	items[1][3]=1;//bcda
+	items[2][0]=3;
+	items[2][1]=4;
+	items[2][2]=1;
+	items[2][3]=2;//cdab
+	items[3][0]=4;
+	items[3][1]=1;
+	items[3][2]=2;
+	items[3][3]=3;//dabc
+	items[9][0]=1;
+	items[9][1]=2;
+	items[9][2]=4;
+	items[9][3]=5;//abde
+	items[4][0]=2;
+	items[4][1]=5;
+	items[4][2]=6;
+	items[4][3]=7;//befg
+	items[5][0]=1;
+	items[5][1]=3;
+	items[5][2]=4;
+	items[5][3]=5;//acde
+	items[6][0]=2;
+	items[6][1]=5;
+	items[6][2]=6;
+	items[6][3]=3;//befc
+	items[7][0]=1;
+	items[7][1]=2;
+	items[7][2]=5;
+	items[7][3]=6;//abef
+	items[8][0]=1;
+	items[8][1]=3;
+	items[8][2]=4;
+	items[8][3]=3;//acdc
+	/*items[0]="ABCD";
 	items[1]="BCDA";
 	items[2]="CDAB";
 	items[3]="DABC";
@@ -167,17 +200,16 @@ int main()
 	items[6]="ACDE";
 	items[7]="BEFC";
 	items[8]="ABEF";
-	items[9]="ACDC";
-	map<char,int>itemmap;
+	items[9]="ACDC";*/
+	map<int,int>itemmap;
 	int total=0;
 	for(int i=0; i<ITEMNUM; i++)
 	{
-		int len=items[i].length();
-		for(int j=0; j<len; j++)
+		for(int j=0; j<ITEMLEN; j++)
 		{
 			total++;
-			char word=items[i][j];
-			map<char,int>::iterator it;
+			int word=items[i][j];
+			map<int,int>::iterator it;
 			it=itemmap.find(word);
 			if(it==itemmap.end())
 			{
@@ -190,7 +222,7 @@ int main()
 		}
 	}
 	vector<seq> sequences;
-	map<char,int>::iterator iter;
+	map<int,int>::iterator iter;
 	for(iter=itemmap.begin();iter!=itemmap.end();iter++)
 	{
 		sequences.push_back(make_pair(iter->first,(double)iter->second/total));
@@ -215,14 +247,14 @@ int main()
 				{
 					if(sequences[minor].first==items[k][m])
 					{
-						items[k][m]='*';
+						items[k][m]=-1;
 					}
 				}
 			}
 			minorpercent+=sequences[minor].second;
 			sequences.pop_back();
 		}
-		sequences.push_back(make_pair('*',minorpercent));
+		sequences.push_back(make_pair(0,minorpercent));
 	}
 	num=sequences.size();
 	double** A=new double* [num];
@@ -279,7 +311,7 @@ int main()
 		}
 	}
 
-	string s="GABCDA";
+	string s="712341";//假设命令为单数 之后会用数组代替
 	double *pi=new double[num];
 	for(int i=0;i<num;i++)
 	{
