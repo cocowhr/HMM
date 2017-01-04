@@ -1,5 +1,7 @@
 #include "viterbi.h"
-
+/********/
+/*适用于较长序列的挖掘*/
+/********/
 
 //bool compstring(const seq a, const seq b) {
 //	return a.first<b.first;
@@ -89,53 +91,37 @@ int* Viterbi(double **A,int N, int s,double* pi)
 	cout<<endl;
 	return str;
 }
-string int2str(int n) {
-
-	char t[24];
-	int i = 0;
-
-	while (n) {
-		t[i++] = (n % 10) + '0';
-		n /= 10;
-	}
-	t[i] = 0;
-	string ret=(string)_strrev(t);
-	if (ret.length()<1)
-	{
-		ret="0";
-	}
-	return ret;
-}
-double Mtest(string s,vector<seq>*sequences,double** A,int N,double* pi)
+double Mtest(int s[],vector<seq>*sequences,double** A,int N,double* pi)
 {
-	int slen=s.length();
+	int slen=4;
 	for(int i=0;i<slen;i++)
 	{
-		if(s[i]>='0'&&s[i]<='9')
+		int sid=0;
+		vector<seq>::iterator result = find_if( sequences->begin( ), sequences->end( ),Seq_eq(s[i])); 
+		if(result != sequences->end())
 		{
-			int sid=0;
-			vector<seq>::iterator result = find_if( sequences->begin( ), sequences->end( ),Seq_eq(s[i]-'0')); 
-			if(result != sequences->end())
-			{
-				sid=result-sequences->begin();
-			}
-			else
-			{
-				sid=sequences->end()-sequences->begin()-1;
-			}
-			string temp2=int2str(sid);
-			s[i]=temp2[0];
+			sid=result-sequences->begin();
 		}
+		else
+		{
+			sid=sequences->end()-sequences->begin()-1;
+		}
+		s[i]=sid;
 	}
 	int sup=0;
 	for(int i=0;i<=slen-4;i++)
 	{
-		string ss=s.substr(i,4);
-		int *v=Viterbi(A,N,ss[0]-'0',pi);
+		int ss[4];
+		ss[0]=s[i];
+		ss[1]=s[i+1];
+		ss[2]=s[i+2];
+		ss[3]=s[i+3];
+		int *v=Viterbi(A,N,ss[0],pi);
 		int acc=0;
 		for(int i=0; i<SEQUENCELEN; ++i)
 		{
-			if(v[i]==ss[i]-'0')
+			/*cout<<ss[i]<<endl;*/
+			if(v[i]==ss[i])
 			{
 				acc++;
 			}
@@ -147,50 +133,92 @@ double Mtest(string s,vector<seq>*sequences,double** A,int N,double* pi)
 	}
 	return (double)sup/(slen-SEQUENCELEN+1);
 }
-
+double Mtestacc(int s[],vector<seq>*sequences,double** A,int N,double* pi)
+{
+	for(int i=0;i<4;i++)
+	{
+		int sid=0;
+		vector<seq>::iterator result = find_if( sequences->begin( ), sequences->end( ),Seq_eq(s[i])); 
+		if(result != sequences->end())
+		{
+			sid=result-sequences->begin();
+		}
+		else
+		{
+			sid=sequences->end()-sequences->begin()-1;
+		}
+		s[i]=sid;
+	}
+	int sup=0;
+	int *v=Viterbi(A,N,s[0],pi);
+	int acc=0;
+	for(int i=0; i<SEQUENCELEN; ++i)
+	{
+		/*cout<<ss[i]<<endl;*/
+		if(v[i]==s[i])
+		{
+			acc++;
+		}
+	}
+	return (double)(acc)/SEQUENCELEN;
+}
 int main()
 {
 	int items[ITEMNUM][ITEMLEN];
-	items[0][0]=1;
-	items[0][1]=2;
-	items[0][2]=3;
-	items[0][3]=4;//abcd
-	items[1][0]=2;
-	items[1][1]=3;
-	items[1][2]=4;
-	items[1][3]=1;//bcda
-	items[2][0]=3;
-	items[2][1]=4;
-	items[2][2]=1;
-	items[2][3]=2;//cdab
-	items[3][0]=4;
-	items[3][1]=1;
-	items[3][2]=2;
-	items[3][3]=3;//dabc
-	items[9][0]=1;
-	items[9][1]=2;
-	items[9][2]=4;
-	items[9][3]=5;//abde
-	items[4][0]=2;
-	items[4][1]=5;
-	items[4][2]=6;
-	items[4][3]=7;//befg
-	items[5][0]=1;
-	items[5][1]=3;
-	items[5][2]=4;
-	items[5][3]=5;//acde
-	items[6][0]=2;
-	items[6][1]=5;
-	items[6][2]=6;
-	items[6][3]=3;//befc
-	items[7][0]=1;
-	items[7][1]=2;
-	items[7][2]=5;
-	items[7][3]=6;//abef
-	items[8][0]=1;
-	items[8][1]=3;
-	items[8][2]=4;
-	items[8][3]=3;//acdc
+	mysql_init(&mysql);  
+	mysql_real_connect(&mysql, "localhost", "root", "root", "genet", 3306, NULL, 0); 
+	strSQL.Format("SELECT * FROM seq2");
+	mysql_query(&mysql, strSQL);
+	result = mysql_store_result(&mysql);  
+	int n=0;
+	while ((row = mysql_fetch_row(result))!=NULL)  
+	{  
+		for(int i=0;i<ITEMLEN;i++)
+		{
+			items[n][i]=atoi(row[i+1]);
+		}
+		n++;
+	}  
+	//items[0][0]=11;
+	//items[0][1]=12;
+	//items[0][2]=13;
+	//items[0][3]=14;//abcd
+	//items[1][0]=12;
+	//items[1][1]=13;
+	//items[1][2]=14;
+	//items[1][3]=11;//bcda
+	//items[2][0]=13;
+	//items[2][1]=14;
+	//items[2][2]=11;
+	//items[2][3]=12;//cdab
+	//items[3][0]=14;
+	//items[3][1]=11;
+	//items[3][2]=12;
+	//items[3][3]=13;//dabc
+	//items[9][0]=11;
+	//items[9][1]=12;
+	//items[9][2]=14;
+	//items[9][3]=15;//abde
+	//items[4][0]=12;
+	//items[4][1]=15;
+	//items[4][2]=16;
+	//items[4][3]=17;//befg
+	//items[5][0]=11;
+	//items[5][1]=13;
+	//items[5][2]=14;
+	//items[5][3]=15;//acde
+	//items[6][0]=12;
+	//items[6][1]=15;
+	//items[6][2]=16;
+	//items[6][3]=13;//befc
+	//items[7][0]=11;
+	//items[7][1]=12;
+	//items[7][2]=15;
+	//items[7][3]=16;//abef
+	//items[8][0]=11;
+	//items[8][1]=13;
+	//items[8][2]=14;
+	//items[8][3]=13;//acdc
 	/*items[0]="ABCD";
 	items[1]="BCDA";
 	items[2]="CDAB";
@@ -311,12 +339,15 @@ int main()
 		}
 	}
 
-	string s="712341";//假设命令为单数 之后会用数组代替
+	//int s[4]={4,5,9,1};//假设命令为单数 之后会用数组代替
 	double *pi=new double[num];
 	for(int i=0;i<num;i++)
 	{
 		pi[i]=log(sequences[i].second);
 	}
-	cout<<Mtest(s,&sequences,A,num,pi)<<endl;
+	int *v=Viterbi(A,num,0,pi);
+	for(int i=0;i<4;i++)
+		cout<<sequences[v[i]].first<<endl;
+	//cout<<Mtestacc(s,&sequences,A,num,pi)<<endl;
 
 }
